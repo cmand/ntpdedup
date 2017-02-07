@@ -174,6 +174,44 @@ def print_duplicates(duplicates):
         if len(group):
             print(*sorted(group), sep=' ')
 
+def print_duplicate_statistics(duplicates, servers):
+    all_ipv4 = set()
+    all_ipv6 = set()
+    dups_ipv4_ipv4 = set()
+    dups_ipv6_ipv4 = set()
+    dups_ipv4_ipv6 = set()
+    dups_ipv6_ipv6 = set()
+
+    for server in servers:
+        address = server.get_address()
+        if '.' in address:
+            all_ipv4.add(address)
+        else:
+            all_ipv6.add(address)
+
+    for (addresses, count) in duplicates.items():
+        if count < 1:
+            continue
+        if '.' in addresses[0]:
+            if '.' in addresses[1]:
+                dups_ipv4_ipv4 |= set(addresses)
+            else:
+                dups_ipv4_ipv6.add(addresses[0])
+                dups_ipv6_ipv4.add(addresses[1])
+        else:
+            if '.' in addresses[1]:
+                dups_ipv4_ipv6.add(addresses[1])
+                dups_ipv6_ipv4.add(addresses[0])
+            else:
+                dups_ipv6_ipv6 |= set(addresses)
+
+    print("  IPv4 servers             {0:4}".format(len(all_ipv4)))
+    print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv4), 100.0 * len(dups_ipv4_ipv4) / len(all_ipv4)))
+    print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv6), 100.0 * len(dups_ipv4_ipv6) / len(all_ipv4)))
+    print("  IPv6 servers             {0:4}".format(len(all_ipv6)))
+    print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv4), 100.0 * len(dups_ipv6_ipv4) / len(all_ipv6)))
+    print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv6), 100.0 * len(dups_ipv6_ipv6) / len(all_ipv6)))
+
 def main():
     parser = optparse.OptionParser(usage="Usage: %prog [OPTION]... ADDRESS...")
     parser.add_option("-i", "--iterations", dest="iterations", type="int", default=1, help="specify number of iterations (default 1)")
@@ -210,6 +248,10 @@ def main():
         print("Duplicates:")
 
     print_duplicates(duplicates)
+
+    if options.verbose:
+        print("Statistics:")
+        print_duplicate_statistics(duplicates, servers)
 
 if __name__ == "__main__":
     main()
