@@ -181,6 +181,7 @@ def print_duplicate_statistics(duplicates, servers):
     dups_ipv6_ipv4 = set()
     dups_ipv4_ipv6 = set()
     dups_ipv6_ipv6 = set()
+    unique = set()
 
     for server in servers:
         address = server.get_address()
@@ -188,6 +189,7 @@ def print_duplicate_statistics(duplicates, servers):
             all_ipv4.add(address)
         else:
             all_ipv6.add(address)
+        unique.add(address)
 
     for (addresses, count) in duplicates.items():
         if count < 1:
@@ -204,6 +206,7 @@ def print_duplicate_statistics(duplicates, servers):
                 dups_ipv6_ipv4.add(addresses[0])
             else:
                 dups_ipv6_ipv6 |= set(addresses)
+        unique -= set(sorted(addresses)[1:])
 
     print("  IPv4 servers             {0:4}".format(len(all_ipv4)))
     print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv4), 100.0 * len(dups_ipv4_ipv4) / len(all_ipv4)))
@@ -211,6 +214,7 @@ def print_duplicate_statistics(duplicates, servers):
     print("  IPv6 servers             {0:4}".format(len(all_ipv6)))
     print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv4), 100.0 * len(dups_ipv6_ipv4) / len(all_ipv6)))
     print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv6), 100.0 * len(dups_ipv6_ipv6) / len(all_ipv6)))
+    print("  Unique servers           {0:4}".format(len(unique)))
 
 def main():
     parser = optparse.OptionParser(usage="Usage: %prog [OPTION]... ADDRESS...")
