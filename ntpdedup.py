@@ -209,11 +209,13 @@ def print_duplicate_statistics(duplicates, servers):
         unique -= set(sorted(addresses)[1:])
 
     print("  IPv4 servers             {0:4}".format(len(all_ipv4)))
-    print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv4), 100.0 * len(dups_ipv4_ipv4) / len(all_ipv4)))
-    print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv6), 100.0 * len(dups_ipv4_ipv6) / len(all_ipv4)))
+    if len(all_ipv4):
+        print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv4), 100.0 * len(dups_ipv4_ipv4) / len(all_ipv4)))
+        print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv4_ipv6), 100.0 * len(dups_ipv4_ipv6) / len(all_ipv4)))
     print("  IPv6 servers             {0:4}".format(len(all_ipv6)))
-    print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv4), 100.0 * len(dups_ipv6_ipv4) / len(all_ipv6)))
-    print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv6), 100.0 * len(dups_ipv6_ipv6) / len(all_ipv6)))
+    if len(all_ipv6):
+        print("    with IPv4 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv4), 100.0 * len(dups_ipv6_ipv4) / len(all_ipv6)))
+        print("    with IPv6 duplicates   {0:4} ({1:.1f}%)".format(len(dups_ipv6_ipv6), 100.0 * len(dups_ipv6_ipv6) / len(all_ipv6)))
     print("  Unique servers           {0:4}".format(len(unique)))
 
 def main():
