@@ -151,7 +151,7 @@ def update_duplicates(duplicates, servers):
                 duplicates[addresses] = 0
             duplicates[addresses] += 1
 
-def print_duplicates(duplicates):
+def print_duplicates(duplicates, output=sys.stdout, sep=' '):
     groups = dict()
 
     all_addresses = set()
@@ -172,7 +172,7 @@ def print_duplicates(duplicates):
             group |= set_addresses
             done |= set_addresses
         if len(group):
-            print(*sorted(group), sep=' ')
+            print(*sorted(group), file=output, sep=sep)
 
 def print_duplicate_statistics(duplicates, servers):
     all_ipv4 = set()
@@ -222,6 +222,7 @@ def main():
     parser = optparse.OptionParser(usage="Usage: %prog [OPTION]... ADDRESS...")
     parser.add_option("-i", "--iterations", dest="iterations", type="int", default=1, help="specify number of iterations (default 1)")
     parser.add_option("-w", "--wait", dest="wait", type="float", default=100.0, help="specify interval between iterations (default 100)")
+    parser.add_option("-o", "--output", help="duplicate output csv")
     parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity")
 
     (options, addresses) = parser.parse_args()
@@ -254,6 +255,10 @@ def main():
         print("Duplicates:")
 
     print_duplicates(duplicates)
+
+    if options.output:
+        with open(options.output, 'w') as f:
+            print_duplicates(duplicates, output=f, sep=',')
 
     if options.verbose:
         print("Statistics:")
