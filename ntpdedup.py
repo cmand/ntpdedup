@@ -24,6 +24,7 @@ import socket
 import struct
 import sys
 import time
+import ipaddress
 
 @functools.total_ordering
 class NTPServer(object):
@@ -223,12 +224,23 @@ def main():
     parser.add_option("-i", "--iterations", dest="iterations", type="int", default=1, help="specify number of iterations (default 1)")
     parser.add_option("-w", "--wait", dest="wait", type="float", default=100.0, help="specify interval between iterations (default 100)")
     parser.add_option("-o", "--output", help="duplicate output csv")
+    parser.add_option("-t", "--targets", help="input targets")
     parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity")
 
     (options, addresses) = parser.parse_args()
 
     servers = []
     duplicates = dict()
+
+    if options.targets:
+        with open(options.targets, 'r') as f:
+            for line in f:
+                address = line.strip()
+                try:
+                    ipaddress.ip_address(address)
+                    servers.append(NTPServer(address))
+                except:
+                    print("invalid address: %s" % address)
 
     for address in addresses:
         servers.append(NTPServer(address))
