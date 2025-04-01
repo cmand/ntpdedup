@@ -32,6 +32,7 @@ class NTPServer(object):
         self.address = address
         self.version = 0
         self.stratum = 0
+        self.poll = 0
         self.precision = 0
         self.ref_id = 0
         self.ref_ts = 0
@@ -41,6 +42,7 @@ class NTPServer(object):
     def __eq__(self, other):
         return self.version == other.version and \
                 self.stratum == other.stratum and \
+                self.poll == other.poll and \
                 self.precision == other.precision and \
                 self.ref_id == other.ref_id and \
                 self.ref_ts == other.ref_ts
@@ -50,6 +52,8 @@ class NTPServer(object):
             return self.version < other.version
         if self.stratum != other.stratum:
             return self.stratum < other.stratum
+        if self.poll != other.poll:
+            return self.poll < other.poll
         if self.precision != other.precision:
             return self.precision < other.precision
         if self.ref_id != other.ref_id:
@@ -59,7 +63,7 @@ class NTPServer(object):
         return False
 
     def __str__(self):
-        return "NTP server {0} version={1} stratum={2} precision={3} refid={4:08X} refts={5:016X} resp={6:.6f} hlim={7}".format(self.address, self.version, self.stratum, self.precision, self.ref_id, self.ref_ts, self.response_time, self.hlim)
+        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} refid={5:08X} refts={6:016X} resp={7:.6f} hlim={8}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.ref_id, self.ref_ts, self.response_time, self.hlim)
 
     def get_address(self):
         return self.address
@@ -85,6 +89,7 @@ class NTPServer(object):
 
         self.version = (lvm >> 3) & 0x7
         self.stratum = stratum
+        self.poll = poll
         self.precision = precision
         self.ref_id = ref_id
         self.ref_ts = ref_ts
