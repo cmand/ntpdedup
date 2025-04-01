@@ -39,6 +39,7 @@ class NTPServer(object):
         self.ref_id = 0
         self.ref_ts = 0
         self.response_time = 0.0
+        self.tclass = 0
         self.hlim = 0
 
     def __eq__(self, other):
@@ -65,7 +66,7 @@ class NTPServer(object):
         return False
 
     def __str__(self):
-        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X} refts={8:016X} resp={9:.6f} hlim={10}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, self.ref_ts, self.response_time, self.hlim)
+        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X} refts={8:016X} resp={9:.6f} tclass={10} hlim={11}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, self.ref_ts, self.response_time, self.tclass, self.hlim)
 
     def get_address(self):
         return self.address
@@ -80,7 +81,7 @@ class NTPServer(object):
 
         return addrinfo[0], addrinfo[4], packet
 
-    def process_response(self, packet, hlim):
+    def process_response(self, packet, hlim, tclass):
         if len(packet) < 48:
             return False
 
@@ -98,6 +99,7 @@ class NTPServer(object):
         self.ref_id = ref_id
         self.ref_ts = ref_ts
         self.response_time = float(tx_ts - rx_ts) / 2**32
+        self.tclass = tclass
         self.hlim = hlim
 
         self.has_response = True
@@ -120,6 +122,7 @@ def update_servers(servers):
     ipv6_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     ipv6_socket.settimeout(0.0)
     ipv6_socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVHOPLIMIT, 1)
+    ipv6_socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVTCLASS, 1)
 
     updated = 0
     sockaddr_map = dict()
@@ -142,14 +145,17 @@ def update_servers(servers):
             again = False
             for s in [ipv4_socket, ipv6_socket]:
                 try:
-                    packet, ancdata, msg_flags, sockaddr = s.recvmsg(1024, socket.CMSG_LEN(4))
+                    packet, ancdata, msg_flags, sockaddr = s.recvmsg(1024, socket.CMSG_LEN(32))
                     again = True
                     hlim = 0
+                    tclass = 0
                     for cmsg_level, cmsg_type, cmsg_data in ancdata:
                         if cmsg_level == socket.IPPROTO_IPV6 and cmsg_type == socket.IPV6_HOPLIMIT:
                             hlim = struct.unpack("i", cmsg_data)[0]
+                        elif cmsg_level == socket.IPPROTO_IPV6 and cmsg_type == socket.IPV6_TCLASS:
+                            tclass = struct.unpack("i", cmsg_data)[0]
                     if sockaddr in sockaddr_map:
-                        if sockaddr_map[sockaddr].process_response(packet,hlim):
+                        if sockaddr_map[sockaddr].process_response(packet,hlim,tclass):
                             updated += 1
                 except socket.error:
                     packet = b""
