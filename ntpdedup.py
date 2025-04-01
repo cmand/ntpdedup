@@ -34,6 +34,8 @@ class NTPServer(object):
         self.stratum = 0
         self.poll = 0
         self.precision = 0
+        self.root_delay = 0.0
+        self.root_dispersion = 0.0
         self.ref_id = 0
         self.ref_ts = 0
         self.response_time = 0.0
@@ -63,7 +65,7 @@ class NTPServer(object):
         return False
 
     def __str__(self):
-        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} refid={5:08X} refts={6:016X} resp={7:.6f} hlim={8}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.ref_id, self.ref_ts, self.response_time, self.hlim)
+        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X} refts={8:016X} resp={9:.6f} hlim={10}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, self.ref_ts, self.response_time, self.hlim)
 
     def get_address(self):
         return self.address
@@ -91,6 +93,8 @@ class NTPServer(object):
         self.stratum = stratum
         self.poll = poll
         self.precision = precision
+        self.root_delay = ntp_short_to_float(delay)
+        self.root_dispersion = ntp_short_to_float(disp)
         self.ref_id = ref_id
         self.ref_ts = ref_ts
         self.response_time = float(tx_ts - rx_ts) / 2**32
@@ -101,6 +105,14 @@ class NTPServer(object):
 
     def responded(self):
         return self.has_response
+
+# The 32-bit NTP short format used in delay and dispersion calculations is seconds 
+# and fraction with the decimal point to the left of bit 16.
+def ntp_short_to_float(x):
+    sec  = x >> 16
+    frac = (x & 0x0000ffff)
+    frac = frac / 65536.0
+    return (frac + sec)
 
 def update_servers(servers):
     ipv4_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
