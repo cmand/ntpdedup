@@ -39,7 +39,7 @@ class NTPServer(object):
         self.ref_id = 0
         self.ref_ts = 0
         self.response_time = 0.0
-        self.tclass = 0
+        self.dscp = 0
         self.hlim = 0
 
     def __eq__(self, other):
@@ -66,7 +66,7 @@ class NTPServer(object):
         return False
 
     def __str__(self):
-        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X} refts={8:016X} resp={9:.6f} tclass={10} hlim={11}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, self.ref_ts, self.response_time, self.tclass, self.hlim)
+        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X} refts={8:016X} resp={9:.6f} dscp={10} hlim={11}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, self.ref_ts, self.response_time, self.dscp, self.hlim)
 
     def get_address(self):
         return self.address
@@ -81,7 +81,7 @@ class NTPServer(object):
 
         return addrinfo[0], addrinfo[4], packet
 
-    def process_response(self, packet, hlim, tclass):
+    def process_response(self, packet, hlim, dscp):
         if len(packet) < 48:
             return False
 
@@ -99,7 +99,7 @@ class NTPServer(object):
         self.ref_id = ref_id
         self.ref_ts = ref_ts
         self.response_time = float(tx_ts - rx_ts) / 2**32
-        self.tclass = tclass
+        self.dscp = dscp  
         self.hlim = hlim
 
         self.has_response = True
@@ -148,14 +148,15 @@ def update_servers(servers):
                     packet, ancdata, msg_flags, sockaddr = s.recvmsg(1024, socket.CMSG_LEN(32))
                     again = True
                     hlim = 0
-                    tclass = 0
+                    dscp = 0
                     for cmsg_level, cmsg_type, cmsg_data in ancdata:
                         if cmsg_level == socket.IPPROTO_IPV6 and cmsg_type == socket.IPV6_HOPLIMIT:
                             hlim = struct.unpack("i", cmsg_data)[0]
                         elif cmsg_level == socket.IPPROTO_IPV6 and cmsg_type == socket.IPV6_TCLASS:
                             tclass = struct.unpack("i", cmsg_data)[0]
+                            dscp = (tclass & 0xfc) >> 2 # 6MSB of tclass
                     if sockaddr in sockaddr_map:
-                        if sockaddr_map[sockaddr].process_response(packet,hlim,tclass):
+                        if sockaddr_map[sockaddr].process_response(packet,hlim,dscp):
                             updated += 1
                 except socket.error:
                     packet = b""
@@ -265,6 +266,8 @@ def main():
     if options.targets:
         with open(options.targets, 'r') as f:
             for line in f:
+                if (line[0] == '#') or (len(line) <= 4):
+                    continue
                 address = line.strip()
                 try:
                     ipaddress.ip_address(address)
