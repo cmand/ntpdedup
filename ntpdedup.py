@@ -119,8 +119,11 @@ def ntp_short_to_float(x):
 def update_servers(servers):
     ipv4_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     ipv4_socket.settimeout(0.0)
-    ipv4_socket.setsockopt(socket.IPPROTO_IP, socket.IP_RECVTTL, 1)
-    ipv4_socket.setsockopt(socket.IPPROTO_IP, socket.IP_RECVTOS, 1)
+    try:
+        ipv4_socket.setsockopt(socket.IPPROTO_IP, socket.IP_RECVTTL, 1)
+        ipv4_socket.setsockopt(socket.IPPROTO_IP, socket.IP_RECVTOS, 1)
+    except OSError:
+        pass
     ipv6_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     ipv6_socket.settimeout(0.0)
     ipv6_socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVHOPLIMIT, 1)
