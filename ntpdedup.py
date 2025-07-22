@@ -119,6 +119,8 @@ def ntp_short_to_float(x):
 def update_servers(servers):
     ipv4_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     ipv4_socket.settimeout(0.0)
+    ipv4_socket.setsockopt(socket.IPPROTO_IP, socket.IP_RECVTTL, 1)
+    ipv4_socket.setsockopt(socket.IPPROTO_IP, socket.IP_RECVTOS, 1)
     ipv6_socket = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     ipv6_socket.settimeout(0.0)
     ipv6_socket.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_RECVHOPLIMIT, 1)
@@ -150,11 +152,19 @@ def update_servers(servers):
                     hlim = 0
                     dscp = 0
                     for cmsg_level, cmsg_type, cmsg_data in ancdata:
-                        if cmsg_level == socket.IPPROTO_IPV6 and cmsg_type == socket.IPV6_HOPLIMIT:
-                            hlim = struct.unpack("i", cmsg_data)[0]
-                        elif cmsg_level == socket.IPPROTO_IPV6 and cmsg_type == socket.IPV6_TCLASS:
-                            tclass = struct.unpack("i", cmsg_data)[0]
-                            dscp = (tclass & 0xfc) >> 2 # 6MSB of tclass
+                        if cmsg_level == socket.IPPROTO_IP:
+                            if cmsg_type == socket.IP_TTL:
+                                hlim = struct.unpack("i", cmsg_data)[0]
+                            elif cmsg_type == socket.IP_TOS:
+                                tclass = struct.unpack("b", cmsg_data)[0]
+                                dscp = (tclass & 0xfc) >> 2 # 6MSB of tclass
+                        elif cmsg_level == socket.IPPROTO_IPV6:
+                            if cmsg_type == socket.IPV6_HOPLIMIT:
+                                hlim = struct.unpack("i", cmsg_data)[0]
+                            elif cmsg_type == socket.IPV6_TCLASS:
+                                tclass = struct.unpack("i", cmsg_data)[0]
+                                dscp = (tclass & 0xfc) >> 2 # 6MSB of tclass
+
                     if sockaddr in sockaddr_map:
                         if sockaddr_map[sockaddr].process_response(packet,hlim,dscp):
                             updated += 1
@@ -310,4 +320,6 @@ def main():
         print_duplicate_statistics(duplicates, servers)
 
 if __name__ == "__main__":
+    if not hasattr(socket,'IP_RECVTTL'):
+        socket.IP_RECVTTL = 12
     main()
