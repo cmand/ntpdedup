@@ -66,7 +66,7 @@ class NTPServer(object):
         return False
 
     def __str__(self):
-        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X} refts={8:016X} resp={9:.6f} dscp={10} hlim={11}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, self.ref_ts, self.response_time, self.dscp, self.hlim)
+        return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X}({8}) refts={9:016X} resp={10:.6f} dscp={11} hlim={12}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, refid_to_str(self.ref_id), self.ref_ts, self.response_time, self.dscp, self.hlim)
 
     def get_address(self):
         return self.address
@@ -115,6 +115,11 @@ def ntp_short_to_float(x):
     frac = (x & 0x0000ffff)
     frac = frac / 65536.0
     return (frac + sec)
+
+""" convert an NTP stratum 1 refid to a string """
+def refid_to_str(n):
+    s = struct.pack('!I', n)
+    return s.decode("ascii", errors="ignore")
 
 def update_servers(servers):
     ipv4_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
