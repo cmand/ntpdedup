@@ -25,6 +25,7 @@ import struct
 import sys
 import time
 import ipaddress
+import json
 
 @functools.total_ordering
 class NTPServer(object):
@@ -67,6 +68,9 @@ class NTPServer(object):
 
     def __str__(self):
         return "NTP server {0} version={1} stratum={2} poll={3} precision={4} rdelay={5:.6f} rdisp={6:.6f} refid={7:08X}({8}) refts={9:016X} resp={10:.6f} dscp={11} hlim={12}".format(self.address, self.version, self.stratum, self.poll, self.precision, self.root_delay, self.root_dispersion, self.ref_id, refid_to_str(self.ref_id), self.ref_ts, self.response_time, self.dscp, self.hlim)
+
+    def __json__(self):
+        return {'version': self.version, 'stratum': self.stratum, 'poll' : self.poll, 'precision': self.precision, 'ref_id': self.ref_id, 'ref_ts': self.ref_ts, 'root_delay': self.root_delay, 'root_disp': self.root_dispersion}
 
     def get_address(self):
         return self.address
@@ -273,6 +277,7 @@ def main():
     parser.add_option("-i", "--iterations", dest="iterations", type="int", default=1, help="specify number of iterations (default 1)")
     parser.add_option("-w", "--wait", dest="wait", type="float", default=100.0, help="specify interval between iterations (default 100)")
     parser.add_option("-o", "--output", help="duplicate output csv")
+    parser.add_option("-m", "--meta", help="write result metadata json")
     parser.add_option("-t", "--targets", help="input targets")
     parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity")
 
@@ -322,6 +327,13 @@ def main():
     if options.output:
         with open(options.output, 'w') as f:
             print_duplicates(duplicates, output=f, sep=',')
+
+    if options.meta:
+        z = dict()
+        for server in servers:
+            z[server.address] = server.__json__()
+        with open(options.meta, 'w') as f:
+            json.dump(z, f, indent=4)
 
     if options.verbose:
         print("Statistics:")
